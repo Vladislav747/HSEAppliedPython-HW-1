@@ -1,3 +1,9 @@
+# Активировать виртуальное окружение
+
+```
+source venv/bin/activate
+```
+
 # Запустить генерацию средних значений по температуре по городам
 ```python
 python3 generate_average_temp.py

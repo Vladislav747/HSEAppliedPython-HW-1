@@ -3,20 +3,6 @@ import time
 from joblib import Parallel, delayed
 from pathlib import Path
 
-my_file = Path("temperature_data1.csv")
-if not my_file.is_file():
-    print("Файл 'Сгенерированных данных по городам и температуре' не найден")
-    exit()
-
-df = pd.read_csv("temperature_data.csv")
-
-# Расчёт скользящего среднего до группировки
-df['timestamp'] = pd.to_datetime(df['timestamp'])
-df['temperature_ma_30'] = df['temperature'].rolling(window=30).mean()
-
-# Группировка по городу и сезону
-grouped = df.groupby(['city', 'season'])
-
 # Функция для обработки одной группы(группа города и сезона)
 def process_group(group):
     mean = group['temperature'].mean()
@@ -55,14 +41,32 @@ def benchmark(func, *args, **kwargs):
     print(f"Время выполнения: {end_time - start_time:.2f} секунд")
     return result
 
-# Сравнение
-print("Последовательное выполнение:")
-result_serial = benchmark(serial_apply_groups, grouped, process_group)
+def main():
+    my_file = Path("temperature_data.csv")
+    if not my_file.is_file():
+        print("Файл 'temperature_data.csv' не найден.")
+        return
 
-print("Распараллеливание:")
-result_parallel = benchmark(parallel_apply_groups, grouped, process_group, n_jobs=4)
+    df = pd.read_csv("temperature_data.csv")
 
-# Проверка идентичности результатов
-print(f"Результаты идентичны: {result_serial.equals(result_parallel)}")
+    # Расчёт скользящего среднего до группировки
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df['temperature_ma_30'] = df['temperature'].rolling(window=30).mean()
 
-# Мы видим что последовательное выполнение даже быстрее распараллеливания
+    # Группировка по городу и сезону
+    grouped = df.groupby(['city', 'season'])
+
+    # Сравнение
+    print("Последовательное выполнение:")
+    result_serial = benchmark(serial_apply_groups, grouped, process_group)
+
+    print("Распараллеливание:")
+    result_parallel = benchmark(parallel_apply_groups, grouped, process_group, n_jobs=4)
+
+    # Проверка идентичности результатов
+    print(f"Результаты идентичны: {result_serial.equals(result_parallel)}")
+
+    # Мы видим что последовательное выполнение даже быстрее распараллеливания
+
+if __name__ == "__main__":
+    main()
