@@ -1,7 +1,11 @@
 import pandas as pd
 import time
+from datetime import datetime
+
+import requests
 from joblib import Parallel, delayed
 from pathlib import Path
+
 
 # Функция для обработки одной группы(группа города и сезона)
 def process_group(group):
@@ -17,15 +21,18 @@ def process_group(group):
     group['upper_bound'] = upper_bound
     return group
 
+
 # Распараллеливание обработки по группам
 def parallel_apply_groups(grouped, func, n_jobs=4):
     groups = [group for _, group in grouped]
     results = Parallel(n_jobs=n_jobs)(delayed(func)(group) for group in groups)
     return pd.concat(results)
 
+
 # Последовательное выполнение
 def serial_apply_groups(grouped, func):
     return pd.concat([func(group) for _, group in grouped])
+
 
 def benchmark(func, *args, **kwargs):
     """
@@ -40,6 +47,48 @@ def benchmark(func, *args, **kwargs):
     end_time = time.time()
     print(f"Время выполнения: {end_time - start_time:.2f} секунд")
     return result
+
+
+def get_current_temperature(city, api_key):
+    """
+    Получение текущей температуры для указанного города через OpenWeatherMap API.
+    """
+    base_url = "http://api.openweathermap.org/data/2.5/weather"
+    params = {
+        'q': city,
+        'appid': api_key,
+        'units': 'metric',
+    }
+
+    try:
+        response = requests.get(base_url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        temperature = data['main']['temp']
+        return temperature
+    except requests.exceptions.RequestException as e:
+        print(f"Ошибка при запросе API: {e}")
+        return None
+
+
+def get_current_season():
+    """
+    Определяет текущий сезон на основе даты.
+    """
+    date = datetime.now()
+
+    month = date.month
+
+    # Определение сезона по месяцам и дням
+    if month in [12, 1, 2]:
+        return "winter"
+    elif month in [3, 4, 5]:
+        return "spring"
+    elif month in [6, 7, 8]:
+        return "summer"
+    elif month in [9, 10, 11]:
+        return "fall"
+
 
 def main():
     my_file = Path("temperature_data.csv")
@@ -67,6 +116,31 @@ def main():
     print(f"Результаты идентичны: {result_serial.equals(result_parallel)}")
 
     # Мы видим что последовательное выполнение даже быстрее распараллеливания
+
+    print(df.head(), "df")
+    print(result_serial.head(), "result_serial")
+
+    api_key = "7351568487f157e6ae573f6d33d5cf77"
+
+    # Город для мониторинга
+    city = "New York"
+
+    # Получение текущей температуры
+    current_temp = get_current_temperature(city, api_key)
+
+    if current_temp is not None:
+        print(f"Текущая температура в городе {city}: {current_temp}°C")
+    else:
+        print("Не удалось получить данные о температуре.")
+
+    current_season = get_current_season()
+    print(f"Текущий сезон: {current_season}")
+
+    # Получение результата для города New York
+    avg_temp_cities = result_serial[(result_serial['city'] == 'New York') & (result_serial['season'] == current_season)]
+    avg_temp_from_history = avg_temp_cities.iloc[0]['average']
+    print(avg_temp_from_history, "avg_temp_from_history")
+
 
 if __name__ == "__main__":
     main()
