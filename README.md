@@ -15,5 +15,5 @@ python3 generate_average_temp.py
 python3 process_data.py
 ```
 
-
+Хост в streamlit-cloud
 https://hseappliedpython-hw-1git-dqcc3h9g5sr3uckaampdqk.streamlit.app/
