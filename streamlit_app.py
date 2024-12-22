@@ -1,8 +1,13 @@
 import streamlit as st
 import pandas as pd
+import asyncio
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
+from process_data import get_current_temperature, async_get_current_temperature, serial_apply_groups, process_group, \
+    get_current_season
+
+api_key = "7351568487f157e6ae573f6d33d5cf77"
 
 st.title('Приложение для анализа и визуализации данных о температуре')
 st.header('Загрузите файл с историческими данными о температуре')
@@ -11,107 +16,49 @@ st.header('Загрузите файл с историческими данны�
 def load_data(filepath):
     return pd.read_csv(filepath)
 
-uploaded_file = st.file_uploader('Upload a CSV file', type=['csv'])
+uploaded_file = st.file_uploader('Загрузите файл с историческими данными о температуре', type=['csv'])
 if uploaded_file is not None:
     data = load_data(uploaded_file)
-    st.dataframe(data)
+    # Расчёт скользящего среднего до группировки
+    data['timestamp'] = pd.to_datetime(data['timestamp'])
+    data['temperature_ma_30'] = data['temperature'].rolling(window=30).mean()
+
+    # Группировка по городу и сезону
+    grouped = data.groupby(['city', 'season'])
+    res = serial_apply_groups(grouped, process_group)
+    st.dataframe(res)
 else:
     st.write('No file uploaded.')
 
 if uploaded_file is not None:
-    st.header('Шаг 2: Очистка данных')
 
-    if st.checkbox('Удалить пустые значения'):
-        data = data.dropna()
-        st.write("Пустые значения удалены.")
-        st.dataframe(data)
+    option = st.selectbox(
+        "Выберите город - для получения текущей температуры:",
+        ("New York", "Mexico City", "Sydney"),
+    )
 
-    if st.checkbox('Заменить пустые значения на нули'):
-        data = data.fillna(data.mean())
-        st.write("Пустые значения заменены на среднее.")
-        st.dataframe(data)
+    st.write("You selected:", option)
 
-if uploaded_file is not None:
-    st.header('Шаг 3: Анализ статистических показателей')
-    if st.checkbox('Показать статистические показатели'):
-        st.subheader('Статистические показатели:')
-        st.write(data.describe())
+    # Кнопка для запуска асинхронного вызова
+    if st.button("Получить текущую температуру"):
+        async def fetch_temperature():
+            return await async_get_current_temperature(option, api_key)
 
-if uploaded_file is not None:
-    st.header('Шаг 4: Визуализация данных')
-    st.subheader('Гистограмма:')
-    column = st.selectbox('Выберите столбец для гистограммы', data.columns)
-    bins = st.slider('Количество интервалов', 5, 50, 10)
+        # Запуск асинхронной функции
+        temp = asyncio.run(fetch_temperature())
 
-    fig, ax = plt.subplots()
-    ax.hist(data[column], bins=bins, color='skyblue', edgecolor='red')
-    st.pyplot(fig)
+        current_season = get_current_season()
+        st.write(f"Текущий сезон: {current_season}")
 
-    st.subheader('Корреляционная матрица:')
+        # Получение результата для города New York
+        # avg_temp_cities = data[(data['city'] == 'New York') & (data['season'] == current_season)]
+        # avg_temp_from_history = avg_temp_cities.iloc[0]['average']
+        # print(avg_temp_from_history, "avg_temp_from_history")
 
-    if st.checkbox('Показать корреляционную матрица'):
-        fig, ax = plt.subplots()
-        sns.heatmap(data.corr(), annot=True, cmap='coolwarm', ax=ax)
-        st.pyplot(fig)
-
-
-from sklearn import model_selection, linear_model, metrics
-
-if uploaded_file is not None:
-    st.header('Шаг 5: Построение модели линейной регрессии')
-
-    target_column = st.selectbox('Выберите столбец для зависимой переменной(y)', data.columns)
-    feature_columns = st.multiselect('Выберите столбцы для признаков(X)', [col for col in data.columns if col!= target_column])
-
-    if st.button('Построить модель'):
-        X = data[feature_columns]
-        y = data[target_column]
-
-        X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, random_state=42)
-
-        model = linear_model.LinearRegression()
-        model.fit(X_train, y_train)
-
-        y_pred = model.predict(X_test)
-        mse = metrics.mean_squared_error(y_test, y_pred)
-
-        st.write(f"Средняя квадратичная ошибка: {mse:.2f}")
-
-        model = linear_model.LinearRegression()
-        model.fit(X_train, y_train)
-
-        st.subheader('Результаты модели:')
-        st.write('Коэффициенты регрессии:')
-        st.write(model.coef_)
-
-        st.write('Средняя квадратичная ошибка:')
-        y_pred = model.predict(X_test)
-        fig = px.scatter(data, x=data.columns[0], y=data.columns[1], color='blue')
-        st.plotly_chart(fig)
-
-        st.write(metrics.mean_squared_error(y_test, y_pred))
-
-st.header("Управление состоянием")
-
-# Инициализация состояния
-if "count" not in st.session_state:
-    st.session_state.count = 0
-
-# Кнопки для управления состоянием
-if st.button("Increment"):
-    st.session_state.count += 1
-
-if st.button("Decrement"):
-    st.session_state.count -= 1
-
-st.write(f"Current count: {st.session_state.count}")
-
-
-option = st.selectbox(
-    "Выберите город - для получения текущей температуры:",
-    ("New York", "Mexico City", "Sydney"),
-)
-
-st.write("You selected:", option)
+        # Отображение результата
+        if temp is not None:
+            st.success(f"Текущая температура в городе {option}: {temp}°C")
+        else:
+            st.error("Не удалось получить данные о температуре.")
 
 
