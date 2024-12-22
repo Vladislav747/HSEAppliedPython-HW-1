@@ -14,3 +14,6 @@ python3 generate_average_temp.py
 ```python
 python3 main.py
 ```
+
+
+https://hseappliedpython-hw-1git-dqcc3h9g5sr3uckaampdqk.streamlit.app/

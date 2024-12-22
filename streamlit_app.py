@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
 
-st.title('Data Analysis App')
-st.header('Choose a dataset')
+st.title('Приложение для анализа и визуализации данных о температуре')
+st.header('Загрузите файл с историческими данными о температуре')
 
 @st.cache
 def load_data(filepath):
@@ -106,13 +106,12 @@ if st.button("Decrement"):
 
 st.write(f"Current count: {st.session_state.count}")
 
-st.header("Markdown")
 
-st.markdown("""
-# Заголовок 1
+option = st.selectbox(
+    "Выберите город - для получения текущей температуры:",
+    ("New York", "Mexico City", "Sydney"),
+)
 
-""")
-
-st.header("Классификация")
+st.write("You selected:", option)
 
 
