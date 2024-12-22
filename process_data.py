@@ -117,6 +117,14 @@ async def fetch_data(url):
         async with session.get(url) as response:
             return await response.json()
 
+def get_options_cities(df):
+    return df['city'].unique()
+
+def is_current_temp_anomaly(temp_curr, data, selected_city, season_curr):
+    avg_temp_cities = data[(data['city'] == selected_city) & (data['season'] == season_curr)]
+    avg_temp_from_history = avg_temp_cities.iloc[0]['average']
+    return temp_curr < avg_temp_from_history - 2 * avg_temp_cities.iloc[0]['std'] or temp_curr > avg_temp_from_history + 2 * avg_temp_cities.iloc[0]['std']
+
 async def main():
     my_file = Path("temperature_data.csv")
     if not my_file.is_file():

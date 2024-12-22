@@ -10,9 +10,9 @@ python3 generate_average_temp.py
 ```
 
 
-# Получить анализ исторических данных
+# Отдельно Получить анализ исторических данных (задания 1 и 2)
 ```python
-python3 main.py
+python3 process_data.py
 ```
 
 
