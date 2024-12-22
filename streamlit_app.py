@@ -31,7 +31,7 @@ if uploaded_file is not None:
 else:
     st.write('Файл не выбран.')
 
-if uploaded_file is not None and is_data_correct is True:
+if uploaded_file is not None and is_data_correct(data) is True:
     api_key = st.text_input(label='Введите API ключ для OpenWeatherMap')
 
 
