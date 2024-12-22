@@ -8,6 +8,8 @@ import requests
 from joblib import Parallel, delayed
 from pathlib import Path
 
+def is_data_correct(df):
+    return {"city", "season", "temperature", "timestamp"}.issubset(df.columns)
 
 # Функция для обработки одной группы(группа города и сезона)
 def process_group(group):
@@ -133,6 +135,10 @@ async def main():
 
     df = pd.read_csv("temperature_data.csv")
 
+    if is_data_correct(df) is False:
+        print('Необходимые столбцы: city, season, temperature, timestamp - отсутствуют в вашем файле.')
+        return
+
     # Расчёт скользящего среднего до группировки
     df['timestamp'] = pd.to_datetime(df['timestamp'])
     df['temperature_ma_30'] = df['temperature'].rolling(window=30).mean()
@@ -147,8 +153,11 @@ async def main():
     print("Распараллеливание:")
     result_parallel = benchmark(parallel_apply_groups, grouped, process_group, n_jobs=4)
 
-    # Проверка идентичности результатов
-    print(f"Результаты идентичны: {result_serial.equals(result_parallel)}")
+    if result_serial.equals(result_parallel):
+        # Проверка идентичности результатов
+        print("Результаты параллельного и последовательного выполнения идентичны")
+    else:
+        print("Результаты паралельного и последовательного выполнения не идентичны")
 
     # Мы видим что последовательное выполнение даже быстрее распараллеливания
 

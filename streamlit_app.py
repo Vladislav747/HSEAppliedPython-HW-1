@@ -4,7 +4,7 @@ import pandas as pd
 import asyncio
 import matplotlib.pyplot as plt
 from process_data import async_get_current_temperature, serial_apply_groups, process_group, \
-    get_current_season, get_options_cities, is_current_temp_anomaly, get_current_temperature
+    get_current_season, get_options_cities, is_current_temp_anomaly, get_current_temperature, is_data_correct
 
 st.title('Приложение для анализа и визуализации данных о температуре')
 st.header('Загрузите файл с историческими данными о температуре')
@@ -14,20 +14,24 @@ def load_data(filepath):
     return pd.read_csv(filepath)
 
 uploaded_file = st.file_uploader('Загрузите файл с историческими данными о температуре', type=['csv'])
+
 if uploaded_file is not None:
     data = load_data(uploaded_file)
-    # Расчёт скользящего среднего до группировки
-    data['timestamp'] = pd.to_datetime(data['timestamp'])
-    data['temperature_ma_30'] = data['temperature'].rolling(window=30).mean()
+    if is_data_correct(data) is False:
+        st.error('Необходимые столбцы: city, season, temperature, timestamp - отсутствуют в вашем файле.')
+    else:
+        # Расчёт скользящего среднего до группировки
+        data['timestamp'] = pd.to_datetime(data['timestamp'])
+        data['temperature_ma_30'] = data['temperature'].rolling(window=30).mean()
 
-    # Группировка по городу и сезону
-    grouped = data.groupby(['city', 'season'])
-    res = serial_apply_groups(grouped, process_group)
-    st.dataframe(res)
+        # Группировка по городу и сезону
+        grouped = data.groupby(['city', 'season'])
+        res = serial_apply_groups(grouped, process_group)
+        st.dataframe(res)
 else:
     st.write('Файл не выбран.')
 
-if uploaded_file is not None:
+if uploaded_file is not None and is_data_correct is True:
     api_key = st.text_input(label='Введите API ключ для OpenWeatherMap')
 
 

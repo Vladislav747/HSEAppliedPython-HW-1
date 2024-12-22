@@ -15,5 +15,14 @@ python3 generate_average_temp.py
 python3 process_data.py
 ```
 
+# Локально запустить streamlit
+```python
+streamlit run streamlit_app.py
+```
+
 Хост в streamlit-cloud
 https://hseappliedpython-hw-1git-dqcc3h9g5sr3uckaampdqk.streamlit.app/
+
+Из бонуса 
+    - добавил проверку по структуре csv - попробуйте засунуть не стандартную структуру по стоблцам csv
+    - Визуализацию синхронного и ассинхронного запроса
