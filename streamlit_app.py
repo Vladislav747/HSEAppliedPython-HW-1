@@ -12,7 +12,7 @@ api_key = "7351568487f157e6ae573f6d33d5cf77"
 st.title('Приложение для анализа и визуализации данных о температуре')
 st.header('Загрузите файл с историческими данными о температуре')
 
-@st.cache
+@st.cache_data
 def load_data(filepath):
     return pd.read_csv(filepath)
 
