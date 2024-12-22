@@ -39,7 +39,6 @@ if uploaded_file is not None:
 
     st.write("Вы выбрали:", option)
 
-    # Кнопка для запуска асинхронного вызова
     if st.button("Получить текущую температуру"):
         async def fetch_temperature():
             return await async_get_current_temperature(option, api_key)
@@ -50,7 +49,58 @@ if uploaded_file is not None:
         current_season = get_current_season()
         st.write(f"Текущий сезон: {current_season}")
 
-        # Отображение результата
+        # Временной ряд с аномалиями
+        st.subheader("Временной ряд температуры с выделением аномалий")
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.plot(res['timestamp'], res['temperature'], label="Температура", color="blue")
+        anomalies = res[res['is_anomaly']]
+        ax.scatter(anomalies['timestamp'], anomalies['temperature'], color="red", label="Аномалии")
+        ax.set_title(f"Временной ряд температуры для {option}")
+        ax.set_xlabel("Дата")
+        ax.set_ylabel("Температура")
+        ax.legend()
+        st.pyplot(fig)
+
+
+        st.subheader("Распределение аномалий температуры")
+        anomalies = res[res['is_anomaly']]
+        if anomalies.empty:
+            st.write("Аномалий не обнаружено.")
+        else:
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.hist(anomalies['temperature'], bins=15, color='red', alpha=0.7, label="Аномалии")
+            ax.set_title(f"Распределение аномалий температуры для {option}")
+            ax.set_xlabel("Температура")
+            ax.set_ylabel("Частота")
+            ax.legend()
+            st.pyplot(fig)
+
+        st.subheader(f"Описательная статистика по историческим данным для города {option}")
+        st.dataframe(res[res['city'] == option].describe())
+
+        st.subheader(f"Сезонные профили для города {option}")
+        seasonal_stats = res.groupby('season').agg(
+            mean_temp=('temperature', 'mean'),
+            std_temp=('temperature', 'std')
+        ).reset_index()
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+
+        seasons = seasonal_stats['season']
+        mean_temps = seasonal_stats['mean_temp']
+        std_temps = seasonal_stats['std_temp']
+
+        ax.plot(seasons, mean_temps, marker='o', label="Средняя температура", color="blue")
+        ax.fill_between(seasons, mean_temps - std_temps, mean_temps + std_temps, color="blue", alpha=0.2, label="± Стандартное отклонение")
+
+        ax.set_title("Сезонные профили температуры")
+        ax.set_xlabel("Сезоны")
+        ax.set_ylabel("Температура (°C)")
+        ax.legend()
+
+        st.pyplot(fig)
+
+        # Отображение текущей температуры
         if temp is not None:
             st.success(f"Текущая температура в городе {option}: {temp}°C")
         else:
@@ -61,5 +111,6 @@ if uploaded_file is not None:
             st.info("Текущая температура является аномальной.")
         else:
             st.info("Текущая температура не является аномальной.")
+
 
 
