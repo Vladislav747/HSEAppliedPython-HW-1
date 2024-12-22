@@ -152,41 +152,5 @@ async def main():
 
     # Мы видим что последовательное выполнение даже быстрее распараллеливания
 
-    api_key = "7351568487f157e6ae573f6d33d5cf77"
-
-    # Город для мониторинга
-    city = "New York"
-
-    # Получение текущей температуры
-    # Сравнение
-    print("Синхронный вызов:")
-    start_time = time.time()
-    result_sync = get_current_temperature(city, api_key)
-    end_time = time.time()
-    print(f"Время выполнения синхронной ф-ции: {end_time - start_time:.2f} секунд")
-    print(result_sync, "Результат выполнения синхронной ф-ции.")
-    print("Асинхронный вызов:")
-    start_time = time.time()
-    current_temp_async = await async_get_current_temperature(city, api_key)
-    end_time = time.time()
-    print(f"Время выполнения ассинхронной ф-ции: {end_time - start_time:.2f} секунд")
-    print(current_temp_async, "Результат выполнения асинхронной ф-ции.")
-    print("Результат выполнения асинхронной ф-ции.")
-    # При нескольких прогонах побеждала ассинхронный вызов ф-ции либо результаты замера скорости синхронной и ассинхронной были равны
-
-    if result_sync is not None:
-        print(f"Текущая температура в городе {city}: {result_sync}°C")
-    else:
-        print("Не удалось получить данные о температуре.")
-
-    current_season = get_current_season()
-    print(f"Текущий сезон: {current_season}")
-
-    # Получение результата для города New York
-    avg_temp_cities = result_serial[(result_serial['city'] == 'New York') & (result_serial['season'] == current_season)]
-    avg_temp_from_history = avg_temp_cities.iloc[0]['average']
-    print(avg_temp_from_history, "avg_temp_from_history")
-
-
 if __name__ == "__main__":
     asyncio.run(main())
