@@ -1,3 +1,5 @@
+import aiohttp
+import asyncio
 import pandas as pd
 import time
 from datetime import datetime
@@ -70,6 +72,27 @@ def get_current_temperature(city, api_key):
         print(f"Ошибка при запросе API: {e}")
         return None
 
+async def async_get_current_temperature(city, api_key):
+    """
+    Получение текущей температуры для указанного города через OpenWeatherMap API.
+    """
+    base_url = "http://api.openweathermap.org/data/2.5/weather"
+    params = {
+        'q': city,
+        'appid': api_key,
+        'units': 'metric',
+    }
+
+    url = f"{base_url}?q={params['q']}&appid={params['appid']}&units={params['units']}"
+
+    try:
+        response = await fetch_data(url)
+        temperature = response['main']['temp']
+        return temperature
+    except requests.exceptions.RequestException as e:
+        print(f"Ошибка при запросе API: {e}")
+        return None
+
 
 def get_current_season():
     """
@@ -89,8 +112,12 @@ def get_current_season():
     elif month in [9, 10, 11]:
         return "fall"
 
+async def fetch_data(url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            return await response.json()
 
-def main():
+async def main():
     my_file = Path("temperature_data.csv")
     if not my_file.is_file():
         print("Файл 'temperature_data.csv' не найден.")
@@ -117,19 +144,30 @@ def main():
 
     # Мы видим что последовательное выполнение даже быстрее распараллеливания
 
-    print(df.head(), "df")
-    print(result_serial.head(), "result_serial")
-
     api_key = "7351568487f157e6ae573f6d33d5cf77"
 
     # Город для мониторинга
     city = "New York"
 
     # Получение текущей температуры
-    current_temp = get_current_temperature(city, api_key)
+    # Сравнение
+    print("Синхронный вызов:")
+    start_time = time.time()
+    result_sync = get_current_temperature(city, api_key)
+    end_time = time.time()
+    print(f"Время выполнения синхронной ф-ции: {end_time - start_time:.2f} секунд")
+    print(result_sync, "Результат выполнения синхронной ф-ции.")
+    print("Асинхронный вызов:")
+    start_time = time.time()
+    current_temp_async = await async_get_current_temperature(city, api_key)
+    end_time = time.time()
+    print(f"Время выполнения ассинхронной ф-ции: {end_time - start_time:.2f} секунд")
+    print(current_temp_async, "Результат выполнения асинхронной ф-ции.")
+    print("Результат выполнения асинхронной ф-ции.")
+    # При нескольких прогонах побеждала ассинхронный вызов ф-ции либо результаты замера скорости синхронной и ассинхронной были равны
 
-    if current_temp is not None:
-        print(f"Текущая температура в городе {city}: {current_temp}°C")
+    if result_sync is not None:
+        print(f"Текущая температура в городе {city}: {result_sync}°C")
     else:
         print("Не удалось получить данные о температуре.")
 
@@ -143,4 +181,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
