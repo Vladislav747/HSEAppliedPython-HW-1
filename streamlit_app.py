@@ -1,5 +1,4 @@
 import time
-
 import streamlit as st
 import pandas as pd
 import asyncio
@@ -86,7 +85,6 @@ if uploaded_file is not None:
             ax.set_ylabel("Температура")
             ax.legend()
             st.pyplot(fig)
-
 
             st.subheader("Распределение аномалий температуры")
             anomalies = res[res['is_anomaly']]
